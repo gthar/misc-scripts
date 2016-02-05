@@ -4,21 +4,25 @@
 # Input parameters
 
 # input files
-xfile <- "newAT_twist.dat"
-yfile <- "newAT_tilt.dat"
-xefile <- "ATe_twist.dat"
-yefile <- "ATe_tilt.dat"
+xfile <- "../newAT_twist.dat"
+yfile <- "../newAT_tilt.dat"
+xefile <- "../ATe_twist.dat"
+yefile <- "../ATe_tilt.dat"
 
 # output file
 outfile <- "2d_densplot.pdf"
 
 # 2D area range
-xlim <- c(0, 60)
+xlim <- c(-1, 60)
 ylim <- c(-20, 20)
+zlim <- c(0, 0.004)
 
 # axis labels
 xlab <- "twist"
 ylab <- "tilt"
+
+# number of bins in the contour
+nbins <- 3
 
 ###############################################################################
 # imports
@@ -94,7 +98,7 @@ names(dens.df) <- c("x", "y", "z")
 ###############################################################################
 # let's find where to draw labels with numbers on the plot
 
-p <- ggplot(dens.df, aes(x, y, z=z)) + stat_contour()
+p <- ggplot(dens.df, aes(x, y, z=z)) + stat_contour(bins=nbins)
 val.df <- ggplot_build(p)$data[[1]]
 
 # from `val.df`, we need an `x` present in all `level` and where each label
@@ -124,7 +128,8 @@ myplot <- ggplot() +
     stat_contour(data=dens.df,
                  mapping=aes(x=x, y=y, z=z),
                  colour="#000000",
-                 alpha=0.5) +
+                 alpha=0.5,
+                 bins=nbins) +
     geom_text(data=txt.df,
               aes(x=x, y=y, z=NULL, label=level),
               size=2.5,
@@ -133,12 +138,12 @@ myplot <- ggplot() +
     scale_colour_gradientn(colours=c("#0000FF",
                                      "#00FFFF",
                                      "#FFFF00",
-                                     "#FF0000")) +
+                                     "#FF0000"),
+                           limits=zlim) +
     xlab(xlab) +
     ylab(ylab) +
     coord_cartesian(xlim=xlim, ylim=ylim) +
     theme_bw()
-myplot
 
 ###############################################################################
 # And save it
