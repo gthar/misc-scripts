@@ -4,22 +4,22 @@
 # Input parameters
 
 # input files
-xfile <- "../newAT_twist.dat"
-yfile <- "../newAT_tilt.dat"
-xefile <- "../ATe_twist.dat"
-yefile <- "../ATe_tilt.dat"
+xfile <- "newGC_roll.dat"
+yfile <- "newGC_tilt.dat"
+xefile <- "GCe_roll.dat"
+yefile <- "GCe_tilt.dat"
 
 # output file
-outfile <- "2d_densplot.pdf"
+outfile <- "GC_tilt_roll.tiff"
 
 # 2D area range
-xlim <- c(-1, 60)
+xlim <- c(-25, 20)
 ylim <- c(-20, 20)
 zlim <- c(0, 0.004)
 
 # axis labels
-xlab <- "twist"
-ylab <- "tilt"
+xlab <- "tilt"
+ylab <- "roll"
 
 # number of bins in the contour
 nbins <- 3
@@ -89,6 +89,7 @@ dfs$s$density <- predict(mod,
 # create a melted data.frame that represents a matrix of the densities
 
 m <- dens$z
+
 colnames(m) <- dens$y
 rownames(m) <- dens$x
 
@@ -119,6 +120,13 @@ sel <- sapply(lapply(by.x,
 # we keep the first one that contains all levels
 txt.df <- by.x[sel][[1]]
 
+# We'll put labels only on the upper part of the plot
+txt.df <- ddply(txt.df,
+                .(level),
+                function (level) subset(level, y == max(y)))
+
+txt.df$level <- round(txt.df$level, 4)
+
 ###############################################################################
 # Make the plot
 
@@ -127,14 +135,15 @@ myplot <- ggplot() +
                mapping=aes(x=x, y=y, color=density)) +
     stat_contour(data=dens.df,
                  mapping=aes(x=x, y=y, z=z),
-                 colour="#000000",
+                 colour="#FFFFFF",
                  alpha=0.5,
                  bins=nbins) +
     geom_text(data=txt.df,
               aes(x=x, y=y, z=NULL, label=level),
               size=2.5,
+              colour="#FF0000",
               alpha=1) +
-    geom_point(data=dfs$e, aes(x, y), size=2, alpha=0.5) +
+    #geom_point(data=dfs$e, aes(x, y), size=2, alpha=0.7) +
     scale_colour_gradientn(colours=c("#0000FF",
                                      "#00FFFF",
                                      "#FFFF00",
@@ -143,11 +152,14 @@ myplot <- ggplot() +
     xlab(xlab) +
     ylab(ylab) +
     coord_cartesian(xlim=xlim, ylim=ylim) +
+    theme(axis.text   = element_text(size=20),
+          axis.title  = element_text(size=20),
+          legend.text = element_text(size=20)) +
     theme_bw()
 
 ###############################################################################
 # And save it
 
-ggsave(filename=outfile, plot=myplot)
+ggsave(filename=outfile, plot=myplot, height=5, width=6)
 
 ###############################################################################
