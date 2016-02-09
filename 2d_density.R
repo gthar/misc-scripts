@@ -175,8 +175,11 @@ myplot <- ggplot() +
                                      "#FFFF00",
                                      "#FF0000"),
                            limits=zlim) +
-    geom_segment(data=segments, (aes(x=x1, y=y, xend=x2, yend=y)), alpha=0.5) +
-    geom_text(data=segments, aes(x=labx, y=laby, label=txt)) +
+    geom_segment(data=segments,
+                 (aes(x=x1, y=y, xend=x2, yend=y)),
+                 alpha=0.5) +
+    geom_text(data=segments,
+              aes(x=labx, y=laby, label=txt)) +
     xlab(xlab) +
     ylab(ylab) +
     coord_cartesian(xlim=xlim, ylim=ylim) +
