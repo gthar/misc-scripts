@@ -40,22 +40,42 @@ library(plyr)
 library(reshape2)
 
 ###############################################################################
-# A couple of FP definitions
+# Some function definitions
 
-compose <- function (...)
-{   # Function composition
-    comp2 <- function (f, g) {
-        force(f)
-        force(g)
-        function (x) f(g(x))
+getLimProp <- function (lim, prop, at.start=TRUE)
+{   # Given a limit range and a proportion, return a sub-limit at the start
+    # or at the end of the original limit
+    segment.len <- (lim[2] - lim[1]) * prop
+    if (at.start) {
+        c(lim[1], lim[1] + segment.len)
+    } else {
+        c(lim[2] - segment.len, lim[2])
     }
-    Reduce(comp2, list(...))
 }
 
-partial <- function (f, ...)
-{   # Partial application
-    capture <- list(...)
-    function (...) do.call(f, c(list(...), capture))
+getSegmentLegendDf <- function (xlim, ylim, xprop, yprop, n,
+                                xplace="right", yplace="bottom")
+{   # Create a data.frame with the data for segments to be
+    # represented as an ad hoc legend for the contour
+    if (xplace == "right") {
+        subxlim <- getLimProp(xlim, xprop, at.start=FALSE)
+    } else if (xplace == "left") {
+        subxlim <- getLimProp(xlim, xprop, at.start=TRUE)
+    }
+    if (yplace == "bottom") {
+        subylim <- getLimProp(ylim, xprop, at.start=TRUE)
+    } else if (yplace == "top") {
+        subylim <- getLimProp(ylim, xprop, at.start=FALSE)
+    }
+
+    total.len <- subylim[2] - subylim[1]
+    sect.len <- total.len/n
+
+    ypos <- subylim[1] + 0:(n-1)*sect.len
+
+    data.frame(x1=subxlim[1],
+               x2=subxlim[2],
+               y=ypos)
 }
 
 ###############################################################################
@@ -105,39 +125,6 @@ names(dens.df) <- c("x", "y", "z")
 
 ###############################################################################
 # let's find where to draw labels with numbers on the plot
-
-getLimProp <- function (lim, prop, at.start=TRUE) {
-    segment.len <- (lim[2] - lim[1]) * prop
-    if (at.start) {
-        c(lim[1], lim[1] + segment.len)
-    } else {
-        c(lim[2] - segment.len, lim[2])
-    }
-}
-
-getSegmentLegendDf <- function (xlim, ylim, xprop, yprop, n,
-                                xplace="right", yplace="bottom")
-{
-    if (xplace == "right") {
-        subxlim <- getLimProp(xlim, xprop, at.start=FALSE)
-    } else if (xplace == "left") {
-        subxlim <- getLimProp(xlim, xprop, at.start=TRUE)
-    }
-    if (yplace == "bottom") {
-        subylim <- getLimProp(ylim, xprop, at.start=TRUE)
-    } else if (yplace == "top") {
-        subylim <- getLimProp(ylim, xprop, at.start=FALSE)
-    }
-
-    total.len <- subylim[2] - subylim[1]
-    sect.len <- total.len/n
-
-    ypos <- subylim[1] + 0:(n-1)*sect.len
-
-    data.frame(x1=subxlim[1],
-               x2=subxlim[2],
-               y=ypos)
-}
 
 ###############################################################################
 
