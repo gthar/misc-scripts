@@ -4,10 +4,10 @@
 # Input parameters
 
 # input files
-xfile <- "newGC_roll.dat"
-yfile <- "newGC_tilt.dat"
-xefile <- "GCe_roll.dat"
-yefile <- "GCe_tilt.dat"
+xfile <- "../newdata/newGC_roll.dat"
+yfile <- "../newdata/newGC_tilt.dat"
+xefile <- "../newdata/GCe_roll.dat"
+yefile <- "../newdata/GCe_tilt.dat"
 
 # output file
 outfile <- "GC_tilt_roll.tiff"
@@ -22,7 +22,14 @@ xlab <- "tilt"
 ylab <- "roll"
 
 # number of bins in the contour
-nbins <- 3
+nbins <- 4
+
+# placement of the segment legend relative to xlim and ylim
+legend.xprop <- 0.15
+legend.yprop <- 0.2
+
+# offset of the number labels to the position of the line, relative to ylim
+lab.offset.prop <- 0.015
 
 ###############################################################################
 # imports
@@ -99,33 +106,57 @@ names(dens.df) <- c("x", "y", "z")
 ###############################################################################
 # let's find where to draw labels with numbers on the plot
 
+getLimProp <- function (lim, prop, at.start=TRUE) {
+    segment.len <- (lim[2] - lim[1]) * prop
+    if (at.start) {
+        c(lim[1], lim[1] + segment.len)
+    } else {
+        c(lim[2] - segment.len, lim[2])
+    }
+}
+
+getSegmentLegendDf <- function (xlim, ylim, xprop, yprop, n,
+                                xplace="right", yplace="bottom")
+{
+    if (xplace == "right") {
+        subxlim <- getLimProp(xlim, xprop, at.start=FALSE)
+    } else if (xplace == "left") {
+        subxlim <- getLimProp(xlim, xprop, at.start=TRUE)
+    }
+    if (yplace == "bottom") {
+        subylim <- getLimProp(ylim, xprop, at.start=TRUE)
+    } else if (yplace == "top") {
+        subylim <- getLimProp(ylim, xprop, at.start=FALSE)
+    }
+
+    total.len <- subylim[2] - subylim[1]
+    sect.len <- total.len/n
+
+    ypos <- subylim[1] + 0:(n-1)*sect.len
+
+    data.frame(x1=subxlim[1],
+               x2=subxlim[2],
+               y=ypos)
+}
+
+###############################################################################
+
 p <- ggplot(dens.df, aes(x, y, z=z)) + stat_contour(bins=nbins)
 val.df <- ggplot_build(p)$data[[1]]
 
-# from `val.df`, we need an `x` present in all `level` and where each label
-# appears only once
+segments <- getSegmentLegendDf(xlim,
+                               ylim,
+                               legend.xprop,
+                               legend.yprop,
+                               nbins,
+                               xplace="right",
+                               yplace="bottom")
 
-getLevels <- compose(sort,
-                     unique,
-                     partial(`[[`,
-                             "level"))
-
-# separate them by x value
-by.x <- dlply(val.df, .(x), identity)
-# get the ones that contain all levels
-sel <- sapply(lapply(by.x,
-                     getLevels),
-              identical,
-              getLevels(val.df))
-# we keep the first one that contains all levels
-txt.df <- by.x[sel][[1]]
-
-# We'll put labels only on the upper part of the plot
-txt.df <- ddply(txt.df,
-                .(level),
-                function (level) subset(level, y == max(y)))
-
-txt.df$level <- round(txt.df$level, 4)
+segments$txt <- round(sort(unique(val.df$level),
+                           decreasing=FALSE),
+                      4)
+segments$labx <- with(segments, (x1+x2) / 2)
+segments$laby <- segments$y + (ylim[2] - ylim[1]) * lab.offset.prop
 
 ###############################################################################
 # Make the plot
@@ -138,17 +169,14 @@ myplot <- ggplot() +
                  colour="#FFFFFF",
                  alpha=0.5,
                  bins=nbins) +
-    geom_text(data=txt.df,
-              aes(x=x, y=y, z=NULL, label=level),
-              size=2.5,
-              colour="#FF0000",
-              alpha=1) +
-    #geom_point(data=dfs$e, aes(x, y), size=2, alpha=0.7) +
+    geom_point(data=dfs$e, aes(x, y), size=2, alpha=0.7) +
     scale_colour_gradientn(colours=c("#0000FF",
                                      "#00FFFF",
                                      "#FFFF00",
                                      "#FF0000"),
                            limits=zlim) +
+    geom_segment(data=segments, (aes(x=x1, y=y, xend=x2, yend=y)), alpha=0.5) +
+    geom_text(data=segments, aes(x=labx, y=laby, label=txt)) +
     xlab(xlab) +
     ylab(ylab) +
     coord_cartesian(xlim=xlim, ylim=ylim) +
@@ -156,10 +184,11 @@ myplot <- ggplot() +
           axis.title  = element_text(size=20),
           legend.text = element_text(size=20)) +
     theme_bw()
+myplot
 
 ###############################################################################
 # And save it
 
-ggsave(filename=outfile, plot=myplot, height=5, width=6)
+#ggsave(filename=outfile, plot=myplot, height=5, width=6)
 
 ###############################################################################
