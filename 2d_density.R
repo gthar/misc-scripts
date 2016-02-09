@@ -4,10 +4,10 @@
 # Input parameters
 
 # input files
-xfile <- "../newdata/newGC_roll.dat"
-yfile <- "../newdata/newGC_tilt.dat"
-xefile <- "../newdata/GCe_roll.dat"
-yefile <- "../newdata/GCe_tilt.dat"
+xfile <- "newGC_roll.dat"
+yfile <- "newGC_tilt.dat"
+xefile <- "GCe_roll.dat"
+yefile <- "GCe_tilt.dat"
 
 # output file
 outfile <- "GC_tilt_roll.tiff"
@@ -184,11 +184,10 @@ myplot <- ggplot() +
           axis.title  = element_text(size=20),
           legend.text = element_text(size=20)) +
     theme_bw()
-myplot
 
 ###############################################################################
 # And save it
 
-#ggsave(filename=outfile, plot=myplot, height=5, width=6)
+ggsave(filename=outfile, plot=myplot, height=5, width=6)
 
 ###############################################################################
