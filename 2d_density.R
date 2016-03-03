@@ -4,17 +4,17 @@
 # Input parameters
 
 # input files
-xfile <- "newGC_roll.dat"
-yfile <- "newGC_tilt.dat"
-xefile <- "GCe_roll.dat"
-yefile <- "GCe_tilt.dat"
+xfile <- "newCG_twist.dat"
+yfile <- "newCG_tilt.dat"
+xefile <- "CGe_twist.dat"
+yefile <- "CGe_tilt.dat"
 
 # output file
 outfile <- "GC_tilt_roll.tiff"
 
 # 2D area range
-xlim <- c(-25, 20)
-ylim <- c(-20, 20)
+xlim <- c(0, 55)
+ylim <- c(-25, 25)
 zlim <- c(0, 0.004)
 
 # axis labels
@@ -41,6 +41,7 @@ library(reshape2)
 
 ###############################################################################
 # Some function definitions
+
 
 getLimProp <- function (lim, prop, at.start=TRUE)
 {   # Given a limit range and a proportion, return a sub-limit at the start
@@ -97,23 +98,7 @@ dfs <- lapply(vals,
 ###############################################################################
 # calculate 2D density over a grid to colour points and to draw contours
 
-dens <- with(dfs$s, kde2d(x, y, n=50, lims=c(xlim, ylim)))
-
-# create a new data frame of that 2d density grid
-# (needs checking that I haven't stuffed up the order here of z?)
-gr <- with(dens,
-           data.frame(expand.grid(x, y),
-                      as.vector(z)))
-names(gr) <- c("xgr", "ygr", "zgr")
-
-mod <- loess(zgr ~ xgr*ygr, data=gr)
-
-dfs$s$density <- predict(mod,
-                         newdata=data.frame(xgr=dfs$s$x,
-                                            ygr=dfs$s$y))
-
-###############################################################################
-# create a melted data.frame that represents a matrix of the densities
+dens <- with(dfs$s, kde2d(x, y, n=100, lims=c(xlim, ylim)))
 
 m <- dens$z
 
@@ -122,6 +107,25 @@ rownames(m) <- dens$x
 
 dens.df <- melt(m)
 names(dens.df) <- c("x", "y", "z")
+
+###############################################################################
+
+compose <- function (...) {
+    comp2 <- function(f, g) {
+        force(f)
+        force(g)
+        function (...) f(g(...))
+    }
+    Reduce(comp2, list(...))
+}
+
+getClosests <- function (xs, is)
+    sapply(xs, compose(which.min, abs, `-`), is)
+
+is <- getClosests(dfs$s$x, dens$x)
+js <- getClosests(dfs$s$y, dens$y)
+
+dfs$s$density <- mapply(function (i, j) dens$z[i, j], is, js)
 
 ###############################################################################
 # let's find where to draw labels with numbers on the plot
@@ -178,6 +182,7 @@ myplot <- ggplot() +
 ###############################################################################
 # And save it
 
-ggsave(filename=outfile, plot=myplot, height=5, width=6)
+myplot
+#ggsave(filename=outfile, plot=myplot, height=5, width=6)
 
 ###############################################################################
